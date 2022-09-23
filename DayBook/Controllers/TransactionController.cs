@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DayBook.Models;
+using DayBook.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,12 +13,21 @@ namespace DayBook.Controllers
     [ApiController]
     public class TransactionController : ControllerBase
     {
+        public TransactionService _service;
+
+        public TransactionController(TransactionService transactionService)
+        {
+            _service = transactionService;
+        }
+
         [HttpPost]
-        public IActionResult CreateTransaction([FromBody] Transaction transaction)
+        public IActionResult CreateTransaction([FromBody] TransactionDto transactionDto)
         {
             try
             {
-                return Ok("Transaction");
+                _service.CreateTransaction(transactionDto);
+
+                return Ok("Transaction Added");
             }
             catch (Exception ex)
             {
@@ -30,7 +40,8 @@ namespace DayBook.Controllers
         {
             try
             {
-                return Ok();
+                var transactions = _service.GetTransactions();
+                return Ok(transactions);
             }
             catch (Exception ex)
             {
@@ -39,13 +50,34 @@ namespace DayBook.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetTransactionById()
+        public IActionResult GetTransactionById(int id)
         {
             try
             {
-                return Ok();
+                var transaction = _service.GetTransactionById(id);
+                return Ok(transaction);
             }
             catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult UpdateTransaction(int id, [FromBody] TransactionDto transactionDto)
+        {
+            try
+            {
+                var transaction = _service.GetTransactionById(id);
+                if (transaction == null)
+                {
+                    return NotFound();
+                }
+                _service.UpdateTransaction(id, transactionDto);
+
+                return Ok("Item updated");
+
+            } catch(Exception ex)
             {
                 throw ex;
             }
@@ -56,11 +88,15 @@ namespace DayBook.Controllers
         {
             try
             {
-                if (id == null)
+                var transaction = _service.GetTransactionById(id);
+                if (transaction == null)
                 {
-                    return BadRequest("Id is missing");
+                    return NotFound();
                 }
-                return Ok();
+
+                _service.DeleteTransactionById(id);
+
+                return Ok("Item deleted successfully");
 
             } catch (Exception ex)
             {
